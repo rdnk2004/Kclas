@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KCLAS Examination</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="Login.css">
+</head>
+<body>
+  <div class="container">
+    <form id="loginForm" onsubmit="return authenticate(event)">
+      <div class="form-group">
+        <input type="email" class="form-control" id="email" placeholder="&#128100; Enter Email" required>
+      </div>
+      <div class="form-group">
+        <input type="password" class="form-control" id="password" placeholder="&#128274; Enter Password" required>
+      </div>
+      <div class="form-group">
+        <select class="form-control" id="role" required>
+          <option value="" disabled selected>Select Role</option>
+          <option value="admin">Admin</option>
+          <option value="faculty">Faculty</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Login</button>
+      <div id="invalidCredentials" class="invalid-credentials" style="display: none;"></div>
+    </form>
+    <div class="change-password-link" onclick="redirectToChangePassword()">Change Password</div>
+  </div>
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    async function authenticate(event) {
+      event.preventDefault();
+
+      const email = document.getElementById("email").value.toLowerCase();
+      const password = document.getElementById("password").value;
+      const role = document.getElementById("role").value.toLowerCase();
+      const invalidCredentialsMsg = document.getElementById("invalidCredentials");
+
+      try {
+        const response = await fetch('http://localhost:5000/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password, role })
+        });
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          if (role === 'admin') {
+            window.location.href = "Admin.html";
+          } else if (role === 'faculty') {
+            window.location.href = "Faculty.html";
+          }
+        } else {
+          invalidCredentialsMsg.style.display = "block";
+          invalidCredentialsMsg.textContent = result.message || "Invalid credentials!";
+        }
+      } catch (error) {
+        console.error("Error during authentication:", error);
+        invalidCredentialsMsg.style.display = "block";
+        invalidCredentialsMsg.textContent = "Server error!";
+      }
+    }
+
+    function redirectToChangePassword() {
+      window.location.href = "Pass_Change.html";
+    }
+  </script>
+</body>
+</html>

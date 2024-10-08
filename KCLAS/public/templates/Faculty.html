@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Page</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="Faculty.css">
+    <style>
+        .styled-excel td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            vertical-align: middle;
+        }
+
+        .styled-excel th {
+            border: 1px solid #ddd;
+            padding: 8px;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+
+        .excel-container {
+            max-width: 100%;
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading-indicator.active {
+            display: block;
+        }
+
+        .error {
+            border-color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-4">
+        <h2 class="text-center mb-4">Faculty Page</h2>
+        <div class="form-row mb-3">
+            <div class="col-md-3">
+                <label for="department">Department</label>
+                <select id="department" class="form-control">
+                    <option value="">Select Department</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="batch">Batch</label>
+                <select id="batch" class="form-control">
+                    <option value="">Select Batch</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="semester">Semester</label>
+                <select id="semester" class="form-control">
+                    <option value="">Select Semester</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="subject">Subject</label>
+                <select id="subject" class="form-control">
+                    <option value="">Select Subject</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row mb-3">
+            <div class="col-md-6">
+                <label for="exam">Exam</label>
+                <select id="exam" class="form-control">
+                    <option value="">Select Exam</option>
+                    <option value="CIA">CIA</option>
+                    <option value="Models">Models</option>
+                    <option value="Internals">Internals</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <button id="enter-marks" class="btn btn-primary mt-4 w-100">Enter Marks</button>
+            </div>
+        </div>
+        <div id="upload-options"></div>
+        <div id="facultyList"></div>
+
+        <div class="loading-indicator" id="loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="manualEntryModal" tabindex="-1" role="dialog" aria-labelledby="manualEntryModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document" style="max-width: 90%; width: 90%;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="manualEntryModalLabel">Manual Entry</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="excelContainer" class="excel-container"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" id="saveChangesBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="faculty.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            fetchOptions("/departments", "department");
+
+            document.getElementById("department").addEventListener("change", function () {
+                const department = this.value;
+                if (department) {
+                    fetchDetails(`/details?department=${department}`);
+                } else {
+                    clearDropdowns();
+                }
+            });
+
+            document.getElementById("enter-marks").addEventListener("click", function () {
+                openManualEntryModal();
+            });
+
+            document.getElementById("saveChangesBtn").addEventListener("click", function () {
+                const marksData = collectMarksData();
+                if (validateMarksData(marksData)) {
+                    saveMarksData(marksData);
+                }
+            });
+        });
+
+        function fetchOptions(url, elementId) {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const selectElement = document.getElementById(elementId);
+                    selectElement.innerHTML = "<option value=''>Select</option>";
+                    data.forEach(item => {
+                        const option = document.createElement("option");
+                        option.value = item.value;
+                        option.textContent = item.label;
+                        selectElement.add(option);
+                    });
+                })
+                .catch(error => console.error("Error fetching data:", error));
+        }
+
+        function fetchDetails(url) {
+            document.getElementById("loading").classList.add("active");
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    populateDropdown("batch", data.batches || []);
+                    populateDropdown("semester", data.semesters || []);
+                    document.getElementById("semester").addEventListener("change", function () {
+                        const semester = this.value;
+                        populateDropdown("subject", data.subjects[semester] || []);
+                    });
+                })
+                .catch(error => console.error("Error fetching details:", error))
+                .finally(() => {
+                    document.getElementById("loading").classList.remove("active");
+                });
+        }
+
+        function populateDropdown(elementId, options) {
+            const selectElement = document.getElementById(elementId);
+            selectElement.innerHTML = "<option value=''>Select</option>";
+            options.forEach(option => {
+                const opt = document.createElement("option");
+                opt.value = option;
+                opt.textContent = option;
+                selectElement.add(opt);
+            });
+        }
+
+        function clearDropdowns() {
+            ["batch", "semester", "subject"].forEach(id => {
+                document.getElementById(id).innerHTML = "<option value=''>Select</option>";
+            });
+        }
+
+        function openManualEntryModal() {
+            const department = document.getElementById("department").value;
+            const batch = document.getElementById("batch").value;
+            const semester = document.getElementById("semester").value;
+            const exam = document.getElementById("exam").value;
+            const subject = document.getElementById("subject").value;
+
+            const missingDetails = [];
+            if (!department) missingDetails.push("Department");
+            if (!batch) missingDetails.push("Batch");
+            if (!semester) missingDetails.push("Semester");
+            if (!exam) missingDetails.push("Exam");
+            if (!subject) missingDetails.push("Subject");
+
+            if (missingDetails.length > 0) {
+                alert("Please fill the following details: " + missingDetails.join(", "));
+            } else {
+                fetch(`/getExcelFile?department=${department}&batch=${batch}&semester=${semester}&subject=${subject}&exam=${exam}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        displayExcelDataInModal(data.data, exam);
+                    })
+                    .catch(error => console.error("Error fetching Excel file:", error));
+            }
+        }
+
+        function displayExcelDataInModal(data, exam) {
+            const modalBody = document.getElementById('excelContainer');
+            modalBody.innerHTML = ''; // Clear previous content
+
+            if (data.length === 0) {
+                modalBody.innerHTML = '<p>No data available.</p>';
+                $('#manualEntryModal').modal('show');
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.classList.add('styled-excel');
+
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+
+            Object.keys(data[0]).forEach(key => {
+                const th = document.createElement('th');
+                th.textContent = key;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                Object.values(row).forEach(value => {
+                    const td = document.createElement('td');
+                    if (typeof value === 'number' && exam !== "CIA") {
+                        const input = document.createElement('input');
+                        input.type = 'number';
+                        input.classList.add('form-control', 'mark-input');
+                        input.value = value;
+                        td.appendChild(input);
+                    } else {
+                        td.textContent = value;
+                    }
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            modalBody.appendChild(table);
+
+            $('#manualEntryModal').modal('show');
+        }
+
+        function collectMarksData() {
+            const marksData = [];
+            const rows = document.querySelectorAll('#excelContainer table tbody tr');
+            rows.forEach(row => {
+                const rowData = [];
+                const inputs = row.querySelectorAll('input.mark-input');
+                inputs.forEach(input => {
+                    rowData.push(parseFloat(input.value) || 0); // Collect numeric values
+                });
+                marksData.push(rowData);
+            });
+            return marksData;
+        }
+
+        function validateMarksData(marksData) {
+            let isValid = true;
+            marksData.forEach(rowData => {
+                rowData.forEach(mark => {
+                    if (isNaN(mark) || mark < 0 || mark > 100) {
+                        isValid = false;
+                    }
+                });
+            });
+
+            if (!isValid) {
+                alert("Please enter valid marks (numeric values between 0 and 100).");
+            }
+
+            return isValid;
+        }
+
+        function saveMarksData(marksData) {
+            console.log("Collected Marks Data:", marksData);
+        
+            // Replace this part with actual backend submission logic
+            fetch('/saveMarks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ marksData }),  // Assuming marksData is structured correctly for your backend
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('Marks saved successfully!');
+                $('#manualEntryModal').modal('hide');
+            })
+            .catch(error => {
+                console.error('Error saving marks:', error);
+                alert('Error saving marks. Please try again.');
+            });
+        }
+     </script>
+</body>
+
+</html>

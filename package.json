@@ -1,0 +1,26 @@
+{
+  "name": "kclas",
+  "version": "1.0.0",
+  "description": "KCLAS Application",
+  "main": "server.js",
+  "scripts": {
+    "start": "concurrently \"node KCLAS/server.js\" \"node KCLAS/faculty.js\" \"node KCLAS/admin.js\""
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "json2csv": "^6.0.0-alpha.2",
+    "mongoose": "^8.5.1",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.14",
+    "path": "^0.12.7",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

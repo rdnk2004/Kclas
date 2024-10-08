@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Page</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="Admin.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Admin Page</h1>
+        <div class="dropdown-container">
+            <select id="department" onchange="loadBatches(this.value)">
+                <option value="">Select Department</option>
+            </select>
+            <button class="btn btn-primary action-btn" onclick="openAddDepartmentModal()">Add Department</button>
+            <button class="btn btn-danger action-btn" onclick="openRemoveDepartmentModal()">Remove Department</button>
+        </div>
+
+        <div class="dropdown-container">
+            <select id="batch">
+                <option value="">Select Batch</option>
+            </select>
+        </div>
+
+        <div class="dropdown-container">
+            <select id="semester">
+                <option value="">Select Semester</option>
+            </select>
+        </div>
+
+        <div class="dropdown-container">
+            <select id="exam">
+                <option value="">Select Exam</option>
+            </select>
+        </div>
+
+        <div class="dropdown-container">
+            <select id="subject">
+                <option value="">Select Subject</option>
+            </select>
+        </div>
+
+        <button class="btn btn-primary" onclick="viewMarks()">View Marks</button>
+        <button class="btn btn-primary" onclick="openSpellPeriodModal()">Set Spell Period</button>
+
+        <div id="excelModal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document" style="max-width: 90%; width: 90%;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Excel File Content</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="excelContainer" class="excel-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Department Modal -->
+        <div id="addDepartmentModal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add Department</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addDepartmentForm">
+                            <div class="form-group">
+                                <label for="newDepartmentName">Department Name</label>
+                                <input type="text" class="form-control" id="newDepartmentName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newBatches">Batches (comma-separated)</label>
+                                <input type="text" class="form-control" id="newBatches" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newSemesters">Semesters (comma-separated)</label>
+                                <input type="text" class="form-control" id="newSemesters" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newExams">Exams (comma-separated)</label>
+                                <input type="text" class="form-control" id="newExams" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newSubjects">Subjects (format: semester: subject1, subject2,...)</label>
+                                <textarea class="form-control" id="newSubjects" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Submit</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Remove Department Modal -->
+        <div id="removeDepartmentModal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Remove Department</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="removeDepartmentForm">
+                            <div class="form-group">
+                                <label for="removeDepartmentName">Select Department</label>
+                                <select id="removeDepartmentName" class="form-control" required>
+                                    <option value="">Select Department</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-danger">Remove</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- **Added Spell Period Modal** -->
+        <div id="spellPeriodModal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Set Spell Period</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="spellPeriodForm">
+                            <div class="form-group">
+                                <label for="spellStartDate">Start Date</label>
+                                <input type="date" class="form-control" id="spellStartDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="spellEndDate">End Date</label>
+                                <input type="date" class="form-control" id="spellEndDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="spellExamType">Exam Type</label>
+                                <select class="form-control" id="spellExamType" required>
+                                    <option value="CIA">CIA</option>
+                                    <option value="Model">Model</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Set Period</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- **End of Added Spell Period Modal** -->
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            loadDepartments();
+            document.getElementById('addDepartmentForm').addEventListener('submit', addDepartment);
+            document.getElementById('removeDepartmentForm').addEventListener('submit', removeDepartment);
+
+            // **Added Script for Spell Period**
+            document.getElementById('spellPeriodForm').addEventListener('submit', setSpellPeriod);
+        });
+
+        function loadDepartments() {
+            fetch('http://localhost:4000/departments')
+                .then(response => response.json())
+                .then(data => {
+                    const departmentSelect = document.getElementById('department');
+                    const removeDepartmentSelect = document.getElementById('removeDepartmentName');
+                    departmentSelect.innerHTML = '<option value="">Select Department</option>';
+                    removeDepartmentSelect.innerHTML = '<option value="">Select Department</option>';
+                    data.forEach(department => {
+                        const option = `<option value="${department.value}">${department.label}</option>`;
+                        departmentSelect.innerHTML += option;
+                        removeDepartmentSelect.innerHTML += option;
+                    });
+                })
+                .catch(error => console.error('Error loading departments:', error));
+        }
+
+        function loadBatches(department) {
+            if (!department) return; // Do nothing if no department is selected
+
+            fetch(`http://localhost:4000/details?department=${department}`)
+                .then(response => response.json())
+                .then(data => {
+                    populateDropdown('batch', data.batches || []);
+                    populateDropdown('semester', data.semesters || []);
+                    populateDropdown('exam', data.exams || []);
+
+                    // Handle subjects dropdown for selected semester
+                    document.getElementById("semester").addEventListener("change", function () {
+                        const selectedSemester = this.value;
+                        populateDropdown("subject", data.subjects[selectedSemester] || []);
+                    });
+                })
+                .catch(error => console.error('Error loading details:', error));
+        }
+
+        function populateDropdown(elementId, items) {
+            const selectElement = document.getElementById(elementId);
+            selectElement.innerHTML = `<option value="">Select ${capitalizeFirstLetter(elementId)}</option>`;
+            items.forEach(item => {
+                const option = `<option value="${item}">${item}</option>`;
+                selectElement.innerHTML += option;
+            });
+        }
+
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        function viewMarks() {
+            const department = document.getElementById('department').value;
+            const batch = document.getElementById('batch').value;
+            const semester = document.getElementById('semester').value;
+            const exam = document.getElementById('exam').value;
+            const subject = document.getElementById('subject').value;
+
+            if (!department || !batch || !semester || !exam || !subject) {
+                alert('Please select all fields.');
+                return;
+            }
+
+            fetch(`http://localhost:4000/viewMarks?department=${department}&batch=${batch}&semester=${semester}&exam=${exam}&subject=${subject}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.marks && data.marks.length > 0) {
+                        renderExcelData(data.marks);
+                        $('#excelModal').modal('show');
+                    } else {
+                        alert('No marks available for the selected criteria.');
+                    }
+                })
+                .catch(error => console.error('Error viewing marks:', error));
+        }
+
+        function renderExcelData(marks) {
+            const container = document.getElementById('excelContainer');
+            container.innerHTML = '';
+
+            if (!marks.length) {
+                container.innerHTML = '<p>No data available.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'table table-bordered';
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+
+            const headers = Object.keys(marks[0]);
+            const headerRow = document.createElement('tr');
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+
+            marks.forEach(rowData => {
+                const row = document.createElement('tr');
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    td.textContent = rowData[header];
+                    row.appendChild(td);
+                });
+                tbody.appendChild(row);
+            });
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            container.appendChild(table);
+        }
+
+        function openAddDepartmentModal() {
+            $('#addDepartmentModal').modal('show');
+        }
+
+        function addDepartment(event) {
+            event.preventDefault();
+            const name = document.getElementById('newDepartmentName').value;
+            const batches = document.getElementById('newBatches').value.split(',').map(s => s.trim());
+            const semesters = document.getElementById('newSemesters').value.split(',').map(s => s.trim());
+            const exams = document.getElementById('newExams').value.split(',').map(s => s.trim());
+            const subjects = document.getElementById('newSubjects').value.trim().split('\n').reduce((acc, line) => {
+                const [semester, subjectList] = line.split(':').map(s => s.trim());
+                acc[semester] = subjectList.split(',').map(s => s.trim());
+                return acc;
+            }, {});
+
+            fetch('http://localhost:4000/addDepartment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, batches, semesters, exams, subjects })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Department added successfully.');
+                        loadDepartments();
+                        $('#addDepartmentModal').modal('hide');
+                    } else {
+                        alert('Failed to add department.');
+                    }
+                })
+                .catch(error => console.error('Error adding department:', error));
+        }
+
+        function openRemoveDepartmentModal() {
+            $('#removeDepartmentModal').modal('show');
+        }
+
+        function removeDepartment(event) {
+            event.preventDefault();
+            const name = document.getElementById('removeDepartmentName').value;
+
+            fetch('http://localhost:4000/removeDepartment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Department removed successfully.');
+                        loadDepartments();
+                        $('#removeDepartmentModal').modal('hide');
+                    } else {
+                        alert('Failed to remove department.');
+                    }
+                })
+                .catch(error => console.error('Error removing department:', error));
+        }
+
+        // **Added Functions for Spell Period**
+        function openSpellPeriodModal() {
+            $('#spellPeriodModal').modal('show');
+        }
+
+        function setSpellPeriod(event) {
+            event.preventDefault();
+        
+            const startDate = document.getElementById('spellStartDate').value;
+            const endDate = document.getElementById('spellEndDate').value;
+            const examType = document.getElementById('spellExamType').value;
+        
+            if (!startDate || !endDate || !examType) {
+                alert('Please fill all fields.');
+                return;
+            }
+        
+            // Validate date range
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+        
+            if (start > end) {
+                alert('Start date cannot be after the end date.');
+                return;
+            }
+        
+            const spellPeriodData = { startDate, endDate, examType };
+        
+            fetch('http://localhost:4000/setSpellPeriod', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(spellPeriodData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Spell period set successfully.');
+                    $('#spellPeriodModal').modal('hide');
+                } else {
+                    console.error('Failed to set spell period');
+                }
+            })
+            .catch(error => console.error('Error setting spell period:', error));
+        }
+        
+    </script>
+</body>
+
+</html>

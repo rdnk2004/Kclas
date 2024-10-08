@@ -1,1 +1,7 @@
-* text=auto
+# Set the default behavior to automatically normalize line endings.
+ text=auto
+
+# Custom rules can go here, for example:
+.js text
+.css text
+.html text

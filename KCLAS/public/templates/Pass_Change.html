@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Change Password</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-image: url("Login BG.png");
+      background-repeat: no-repeat;
+      background-size: cover;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      max-width: 375px;
+      padding: 20px;
+      background-color: rgba(35, 23, 23, 0.7);
+      border-radius: 30px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    form {
+      width: 100%;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #CCCCCC;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    input[type="submit"] {
+      width: 100%;
+      padding: 10px;
+      background-color: #892153;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    input[type="submit"]:hover {
+      background-color: #bc798d;
+    }
+    .invalid-credentials {
+      color: red;
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <form id="changePasswordForm" onsubmit="return changePassword(event)">
+      <h2>Change Password</h2>
+      <div class="form-group">
+        <input type="email" class="form-control" id="email" placeholder="&#128100; Enter Outlook Email" required>
+      </div>
+      <div class="form-group">
+        <input type="password" class="form-control" id="currentPassword" placeholder="&#128274; Enter Current Password" required>
+      </div>
+      <div class="form-group">
+        <input type="password" class="form-control" id="newPassword" placeholder="&#128274; Enter New Password" required>
+      </div>
+      <div class="form-group">
+        <select class="form-control" id="role" required>
+          <option value="" disabled selected>Select Role</option>
+          <option value="admin">Admin</option>
+          <option value="faculty">Faculty</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Change Password</button>
+      <div id="invalidCredentials" class="invalid-credentials" style="display: none;"></div>
+    </form>
+  </div>
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    async function changePassword(event) {
+      event.preventDefault();
+
+      const email = document.getElementById("email").value.toLowerCase();
+      const currentPassword = document.getElementById("currentPassword").value;
+      const newPassword = document.getElementById("newPassword").value;
+      const role = document.getElementById("role").value;
+      const invalidCredentialsMsg = document.getElementById("invalidCredentials");
+
+      try {
+        const response = await fetch('http://localhost:5000/request-password-change', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, currentPassword, newPassword, role })
+        });
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('Verification email sent. Please check your inbox.');
+        } else {
+          invalidCredentialsMsg.style.display = "block";
+          invalidCredentialsMsg.textContent = result.message;
+        }
+      } catch (error) {
+        console.error("Error during password change request:", error);
+        invalidCredentialsMsg.style.display = "block";
+        invalidCredentialsMsg.textContent = "Server error!";
+      }
+    }
+  </script>
+</body>
+</html>
